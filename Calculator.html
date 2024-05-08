@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Symmetric Ciphers Calculator</title>
+<link rel="icon" href="Favicon.jpeg" type="image/x-icon">
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+    }
+    
+    #container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    #top-frame {
+        background-image: url("https://lh4.googleusercontent.com/proxy/BQInLc871Ht3ude-ULPwuAV5nTVZ5Y0ruteAKWSnMj58EFYgYKWefo-Ni9yQJuMdkUxTv-o4PZa6zDn2aq5z7EFiHPbKetao0jeqL08lEk1zGNAM6AoEp4tICAIOGQIZU70i");
+        background-size: cover;
+        flex: 20%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+    }
+
+    #bottom-frame {
+        background-image: url("https://s3-us-west-2.amazonaws.com/aa.techdemand.io/wp-content/uploads/2019/04/09090003/Data-Encryption-Descryption-1024x631.jpg");
+        background-size: cover;
+        background-position: center top 40%; /* Move background image 40% from the top */
+        flex: 80%;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start; /* Align items at the top */
+    }
+
+    #calculator-form {
+        width: 50%;
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 10px;
+    }
+
+    #calculator-form label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    #calculator-form input[type="text"],
+    #calculator-form select,
+    #calculator-form input[type="submit"] {
+        width: calc(100% - 22px); /* Adjusted width to accommodate borders */
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box; /* Ensure padding and border are included in the width */
+    }
+
+    #calculator-form input[type="submit"] {
+        background-color: #007bff;
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .checkbox-label {
+        display: inline;
+        margin-right: 10px;
+    }
+</style>
+</head>
+<body>
+<div id="container">
+    <div id="top-frame">
+        <h1>Symmetric Stream Ciphers Calculator</h1>
+    </div>
+    <div id="bottom-frame">
+        <form id="calculator-form" onsubmit="submitForm(event)">
+            <label for="message">Message:</label>
+            <input type="text" id="message" name="message" required><br>
+            <label for="algorithm">Select type of algorithm:</label>
+            <select id="algorithm" name="algorithm" onchange="changeKeyLabel()">
+                <option value="" selected disabled>Select an algorithm</option>
+                <option value="ceasar">Caesar Cipher</option>
+                <!--<option value="hill">Hill Cipher</option>-->
+                <!--<option value="des">DES</option>-->
+                <option value="vernam">Vernam Cipher</option>
+                <option value="vigenere">Vigenere Cipher</option>
+                <option value="rail">Rail Fence Cipher</option>
+            </select><br>
+            <div id="key-container">
+                <div id="hill-key-options" class="hidden">
+                    <label class="checkbox-label" for="use-any-key">Use any key matrix:</label>
+                    <input type="checkbox" id="use-any-key" name="cb" onchange="toggleKeyInputhill()">
+
+                    <label class="checkbox-label" for="invertible-key-matrix">I know invertible 2x2 key matrix:</label>
+                    <input type="checkbox" id="invertible-key-matrix" name="cb" onchange="toggleKeyInputhill()">
+
+                    <div id="key-matrix-input" class="hidden">
+                        <label for="key-matrix">Enter key matrix:</label>
+                        <input type="text" id="key-matrix" name="key-matrix" placeholder="Enter key matrix...">
+                    </div>
+                </div>
+            </div>
+            <div id="key-container1">
+                <div id="Vigenere-options" class="hidden">
+                    <label class="checkbox-label" for="key-repeat">Repeat Key</label>
+                    <input type="checkbox" id="key-repeat" name="vo" onchange="toggleKeyInputvigenere()">
+
+                    <label class="checkbox-label" for="key-with-pt">Include plaintext in key</label>
+                    <input type="checkbox" id="key-with-pt" name="vo" onchange="toggleKeyInputvigenere()">
+                    <div id="key-vigenere-input" class="hidden">
+                        <label for="key-vigenere">Enter key:</label>
+                        <input type="text" id="key-vigenere" name="key-vigenere" placeholder="Enter key...">
+                    </div>
+                </div>
+            </div>
+            <label id="key-label" for="key" >Key:</label>
+            <input type="text" id="key" name="key"><br>
+            <label for="encrypted">Encrypted Text:</label>
+            <input type="text" id="encrypted" name="encrypted" readonly><br>
+            <label for="decrypted">Decrypted Text:</label>
+            <input type="text" id="decrypted" name="decrypted" readonly><br>
+            <input type="submit" value="Calculate">
+        </form>
+    </div>
+</div>
+<script>
+    function changeKeyLabel() {
+        var select = document.getElementById("algorithm");
+        var keyInput = document.getElementById("key");
+        var hillKeyOptions = document.getElementById("hill-key-options");
+        var keyMatrixInput = document.getElementById("key-matrix-input");
+        var keyLabel = document.getElementById("key-label");
+        var vigenereoptions = document.getElementById("Vigenere-options")
+        
+
+        if (select.value === "ceasar") {
+            keyInput.classList.remove("hidden");
+            keyLabel.style.display = "block";
+            keyLabel.textContent = "Shift Value:";
+            keyInput.placeholder = "Enter shift value...";
+            hillKeyOptions.classList.add("hidden");
+            keyMatrixInput.classList.add("hidden");
+            vigenereoptions.classList.add("hidden");
+            document.getElementById("encrypted").value="";
+            document.getElementById("decrypted").value="";
+            document.getElementById("key").value="";           
+        } else if (select.value === "hill") {
+            keyInput.classList.add("hidden");
+            keyLabel.style.display = "none";
+            hillKeyOptions.classList.remove("hidden");
+            vigenereoptions.classList.add("hidden");
+            document.getElementById("encrypted").value="";
+            document.getElementById("decrypted").value="";
+            document.getElementById("key").value="";
+            toggleKeyInputhill();
+        } else if (select.value === "vernam"){
+            keyInput.classList.remove("hidden");
+            keyLabel.style.display = "block";
+            keyLabel.textContent = "Key";
+            keyInput.placeholder = "Enter a numeric value as key..";
+            hillKeyOptions.classList.add("hidden");
+            keyMatrixInput.classList.add("hidden");
+            vigenereoptions.classList.add("hidden");
+            document.getElementById("encrypted").value="";
+            document.getElementById("decrypted").value="";
+            document.getElementById("key").value="";
+
+        } 
+        else if (select.value === "vigenere"){
+            keyInput.classList.add("hidden");
+            keyLabel.style.display = "none";
+            hillKeyOptions.classList.add("hidden");
+            vigenereoptions.classList.remove("hidden");
+            document.getElementById("encrypted").value="";
+            document.getElementById("decrypted").value="";
+            document.getElementById("key").value="";
+            toggleKeyInputvigenere();
+        }
+        else if (select.value === "rail") {
+            keyInput.classList.remove("hidden");
+            keyLabel.style.display = "block";
+            keyLabel.textContent = "enter Key:";
+            keyInput.placeholder = "Enter depth value...";
+            hillKeyOptions.classList.add("hidden");
+            keyMatrixInput.classList.add("hidden");
+            vigenereoptions.classList.add("hidden");
+            document.getElementById("encrypted").value="";
+            document.getElementById("decrypted").value="";
+            document.getElementById("key").value="";
+        }
+        else {
+            keyInput.classList.remove("hidden");
+            keyLabel.classList.remove("hidden");
+            keyLabel.style.display = "block";
+            keyLabel.textContent = "Key:";
+            keyInput.placeholder = "Enter key...";
+            hillKeyOptions.classList.add("hidden");
+            vigenereoptions.classList.add("hidden");
+            keyMatrixInput.classList.add("hidden");
+            document.getElementById("encrypted").value="";
+            document.getElementById("decrypted").value="";
+            document.getElementById("key").value="";
+        }
+    }
+
+    function toggleKeyInputhill() {
+        var useAnyKeyCheckbox = document.getElementById("use-any-key");
+        var invertibleKeyMatrixCheckbox = document.getElementById("invertible-key-matrix");
+        var keyMatrixInput = document.getElementById("key-matrix-input");
+
+        if (useAnyKeyCheckbox.checked) {
+            invertibleKeyMatrixCheckbox.checked = false;
+            keyMatrixInput.classList.add("hidden");
+        } else if (invertibleKeyMatrixCheckbox.checked) {
+            useAnyKeyCheckbox.checked = false;
+            keyMatrixInput.classList.remove("hidden");
+        } else {
+            keyMatrixInput.classList.add("hidden");
+        }
+    }
+    function toggleKeyInputvigenere() {
+        var KeyrepeatCheckbox = document.getElementById("key-repeat");
+        var KeywithptCheckbox = document.getElementById("key-with-pt");
+        var key = document.getElementById("key-vigenere-input");
+
+        if (KeyrepeatCheckbox.checked) {
+            KeywithptCheckbox.checked = false;
+        } else if (KeywithptCheckbox.checked) {
+            KeyrepeatCheckbox.checked = false;
+        } else {
+            keyMatrixInput.classList.add("hidden");
+        }
+        key.classList.remove("hidden");
+    }
+
+    function submitForm(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        var algorithm = document.getElementById("algorithm").value;
+        var plaintext = document.getElementById("message").value;
+        var key = parseInt(document.getElementById("key").value); // Parse the shift value as an integer
+        var vigenere_key = document.getElementById("key-vigenere").value;
+        var onetimepad = document.getElementById("key").value;
+        
+        if (algorithm === "ceasar") {
+            if (!isValidShiftValue(key)) {
+                alert("Shift value must be a non-negative integer");
+                return false; // Prevent form submission
+            }
+            var encrypted_text = caesar_encrypt(plaintext, key);
+            document.getElementById("encrypted").value = encrypted_text;
+            var decrypted_text = caesar_decrypt(encrypted_text, key);
+            document.getElementById("decrypted").value = decrypted_text;
+        } 
+        else if (algorithm === "hill") {
+            var useAnyKeyCheckbox = document.getElementById("use-any-key");
+            var invertibleKeyMatrixCheckbox = document.getElementById("invertible-key-matrix");
+            var keyMatrix = [];
+
+            if (useAnyKeyCheckbox.checked) {
+                keyMatrix = [[3,9],[2,5]];
+            } else if (invertibleKeyMatrixCheckbox.checked) {
+                var keyMatrixInput = document.getElementById("key-matrix").value;
+                if (!isValidKeyMatrix(keyMatrixInput)) {
+                    alert("Invalid key matrix. Please enter a valid 2x2 invertible matrix.");
+                    return false;
+                }
+                keyMatrix = parseKeyMatrix(keyMatrixInput);
+            } else {
+                alert("Please select a key matrix option.");
+                return false;
+            }
+
+            var encrypted_text = hill_encrypt(plaintext, keyMatrix);
+            document.getElementById("encrypted").value = encrypted_text;
+            var decrypted_text = hill_decrypt(encrypted_text, keyMatrix);
+            document.getElementById("decrypted").value = decrypted_text;
+        }
+        else if (algorithm === "vernam") {
+            var encrypted_text = vernam_encrypt(plaintext, onetimepad);
+            document.getElementById("encrypted").value = encrypted_text;
+            var decrypted_text = vernam_decrypt(encrypted_text, onetimepad);
+            document.getElementById("decrypted").value = decrypted_text;
+        }
+        else if (algorithm === "rail"){
+            var encrypted_text = RailFence_encrypt(plaintext,key);
+            document.getElementById("encrypted").value = encrypted_text;
+            var decrypted_text = RailFence_decrypt(encrypted_text,key);
+            document.getElementById("decrypted").value = decrypted_text;
+        }
+        else if (algorithm === 'vigenere'){
+            var KeyrepeatCheckbox = document.getElementById("key-repeat");
+            var KeywithptCheckbox = document.getElementById("key-with-pt");
+            if (KeyrepeatCheckbox.checked) {
+                var key1 = key_repeat_generateKey(plaintext,vigenere_key); 
+                console.log("Key1: ",key1);               
+            } else if (KeywithptCheckbox.checked) {
+                var key1 = pt_repeat_generateKey(plaintext,vigenere_key);
+                console.log("Key1: ",key1);  
+            }
+            var encrypted_text = vigenere_encrypt(plaintext,key1);
+            document.getElementById("encrypted").value = encrypted_text;
+            var decrypted_text = vigenere_decrypt(encrypted_text,key1);
+            document.getElementById("decrypted").value = decrypted_text; 
+        }
+    }
+
+    function isValidShiftValue(shift) {
+        // Check if shift value is a non-negative integer
+        return /^\d+$/.test(shift);
+    }
+
+    function isValidKeyMatrix(keyMatrixInput) {
+        try {
+            var keyMatrix = parseKeyMatrix(keyMatrixInput);
+            if (keyMatrix.length !== 4) return false; // Not a 2x2 matrix
+            var determinant = keyMatrix[0] * keyMatrix[3] - keyMatrix[1] * keyMatrix[2];
+            return determinant !== 0;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function parseKeyMatrix(keyMatrixInput) {
+        var keyMatrix = JSON.parse(keyMatrixInput);
+        return keyMatrix;
+    }
+
+    // Caesar Cipher functions
+    function caesar_encrypt(plaintext, shift) {
+        var encrypted_text = "";
+        for (var i = 0; i < plaintext.length; i++) {
+            var char = plaintext[i];
+            if (char.match(/[a-z]/i)) { // Check if the character is an alphabet
+                var shifted_char = String.fromCharCode((char.charCodeAt(0) - (char.toLowerCase() === char ? 97 : 65) + shift) % 26 + (char.toLowerCase() === char ? 97 : 65));
+                encrypted_text += shifted_char;
+            } else {
+                encrypted_text += char; // If non-alphabetic character, keep it unchanged
+            }
+        }
+        return encrypted_text;
+    }
+
+    function caesar_decrypt(ciphertext, shift) {
+        var decrypted_text = "";
+        for (var i = 0; i < ciphertext.length; i++) {
+            var char = ciphertext[i];
+            if (char.match(/[a-z]/i)) { // Check if the character is an alphabet
+                var shifted_char = String.fromCharCode((char.charCodeAt(0) - (char.toLowerCase() === char ? 97 : 65) - (shift%26) + 26) % 26 + (char.toLowerCase() === char ? 97 : 65));
+                decrypted_text += shifted_char;
+            } else {
+                decrypted_text += char; // If non-alphabetic character, keep it unchanged
+            }
+        }
+        return decrypted_text;
+    }
+
+    // Hill Cipher functions
+    function hill_encrypt(plaintext, keyMatrix) {
+        // Convert plaintext to uppercase and remove non-alphabetic characters
+        plaintext = plaintext.replace(/[^a-zA-Z]/g, "").toUpperCase();
+        
+        // Pad plaintext with 'X' if necessary to make its length a multiple of keyMatrix size
+        while (plaintext.length % keyMatrix.length !== 0) {
+            plaintext += 'X';
+        }
+
+        var encrypted_text = "";
+        var n = keyMatrix.length;
+        var size = Math.sqrt(n);
+
+        // Convert plaintext letters to numbers (A=0, B=1, ..., Z=25)
+        var plaintextNumbers = plaintext.split('').map(char => char.charCodeAt(0) - 65);
+
+        // Perform matrix multiplication with keyMatrix
+        for (var i = 0; i < plaintextNumbers.length; i += size) {
+            for (var j = 0; j < size; j++) {
+                var sum = 0;
+                for (var k = 0; k < size; k++) {
+                    sum += keyMatrix[j * size + k] * plaintextNumbers[i + k];
+                }
+                encrypted_text += String.fromCharCode((sum % 26) + 65);
+            }
+        }
+        return encrypted_text;
+    }
+
+    function hill_decrypt(ciphertext, keyMatrix) {
+        // Calculate the determinant of the key matrix
+        var determinant = keyMatrix[0] * keyMatrix[3] - keyMatrix[1] * keyMatrix[2];
+        determinant = (determinant % 26 + 26) % 26; // Ensure positive value
+
+        // Calculate the modular inverse of the determinant
+        var determinantInverse = modInverse(determinant);
+        if (determinantInverse === -1) {
+            throw new Error("Determinant is not invertible");
+        }
+
+        // Calculate the adjugate of the key matrix
+        var adjugate = [(keyMatrix[3] % 26), (-1 * keyMatrix[1] % 26), (-1 * keyMatrix[2] % 26), (keyMatrix[0] % 26)];
+
+        // Calculate the inverse of the key matrix
+        var keyMatrixInverse = adjugate.map(element => (element * determinantInverse) % 26);
+
+        // Convert ciphertext to uppercase and remove non-alphabetic characters
+        ciphertext = ciphertext.replace(/[^a-zA-Z]/g, "").toUpperCase();
+
+        var decrypted_text = "";
+        var n = keyMatrix.length;
+        var size = Math.sqrt(n);
+
+        // Convert ciphertext letters to numbers (A=0, B=1, ..., Z=25)
+        var ciphertextNumbers = ciphertext.split('').map(char => char.charCodeAt(0) - 65);
+
+        // Perform matrix multiplication with inverse of keyMatrix
+        for (var i = 0; i < ciphertextNumbers.length; i += size) {
+            for (var j = 0; j < size; j++) {
+                var sum = 0;
+                for (var k = 0; k < size; k++) {
+                    sum += keyMatrixInverse[j * size + k] * ciphertextNumbers[i + k];
+                }
+                decrypted_text += String.fromCharCode(((sum % 26) + 26) % 26 + 65); // Ensure positive value
+            }
+        }
+        return decrypted_text;
+    }
+
+    // Function to calculate the modular inverse of a number (mod 26)
+    function modInverse(a) {
+        for (var i = 1; i < 26; i++) {
+            if ((a * i) % 26 === 1) {
+                return i;
+            }
+        }
+        return -1; // No modular inverse exists
+    }
+
+    //Vernam Cipher with One Time Pad
+    /*function vernam_generate_key(plaintext_length) {
+        var key = '';
+        var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        for (var i = 0; i < plaintext_length; i++) {
+            key += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return key;
+    }*/
+
+    function vernam_encrypt(plaintext, key) {
+        var ciphertext = '';
+        for (var i = 0; i < plaintext.length; i++) {
+            ciphertext += String.fromCharCode(plaintext.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+            //Those xor values less than 32 are shown as boxes as they donot have their corresponding characters
+        }
+        return ciphertext; 
+    }
+
+    function vernam_decrypt(ciphertext, key) {
+        var decrypted_text = '';
+        for (var i = 0; i < ciphertext.length; i++) {
+            decrypted_text += String.fromCharCode(ciphertext.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+        }
+        return decrypted_text;
+    } 
+    
+    //RailFence functions
+
+    function RailFence_encrypt(text, key) {
+        let rail = new Array(key).fill().map(() => new Array(text.length).fill('\n'));
+        let dir_down = false;
+        let row = 0, col = 0;
+        for (let i = 0; i < text.length; i++) {
+            if (row == 0 || row == key - 1) dir_down = !dir_down;
+            rail[row][col++] = text[i];
+            dir_down ? row++ : row--;
+        }
+        let result = '';
+        for (let i = 0; i < key; i++)
+            for (let j = 0; j < text.length; j++)
+            if (rail[i][j] != '\n') result += rail[i][j];
+
+        return result;
+    }
+    function RailFence_decrypt(cipher, key) {
+        let rail = new Array(key).fill().map(() => new Array(cipher.length).fill('\n'));
+        let dir_down = false;
+        let row = 0, col = 0;
+        for (let i = 0; i < cipher.length; i++) {
+            if (row == 0) dir_down = true;
+            if (row == key - 1) dir_down = false;
+            rail[row][col++] = '*';
+            dir_down ? row++ : row--;
+        }
+        let index = 0;
+        for (let i = 0; i < key; i++)
+            for (let j = 0; j < cipher.length; j++)
+            if (rail[i][j] == '*' && index < cipher.length) rail[i][j] = cipher[index++];
+
+        // now read the matrix in zig-zag manner to construct the resultant text
+        let result = '';
+        row = 0, col = 0;
+        for (let i = 0; i < cipher.length; i++) {
+            // check the direction of flow
+            if (row == 0) dir_down = true;
+            if (row == key - 1) dir_down = false;
+
+            // place the marker
+            if (rail[row][col] != '*') result += rail[row][col++];
+
+            // find the next row using direction flag
+            dir_down ? row++ : row--;
+        }
+
+        return result;
+    }
+
+    //Vigenere cipher fuunctions
+    function pt_repeat_generateKey(str, key) {
+        key = key.split('');
+        if (str.length === key.length) {
+            return key.join('');
+        } else {
+            let repeatedKey = key.join('');
+            for (let i = 0; i < (str.length-key.length); i++) {
+                repeatedKey += str[i % str.length];
+            }
+            console.log("Key: " + repeatedKey);
+            return repeatedKey;
+        }
+    }
+
+    function key_repeat_generateKey(str,key){
+     
+        key=key.split("");
+        if(str.length == key.length)
+            return key.join("");
+        else
+        {
+            let temp=key.length;    
+            for (let i = 0;i<(str.length-temp) ; i++)
+            {
+                
+                key.push(key[i % ((key).length)])
+            }
+        }
+        console.log("Key: "+key.join(""));
+        return key.join("");
+    }
+    function vigenere_encrypt(str, key) {
+        let cipher_text = "";
+
+        for (let i = 0; i < str.length; i++) {
+            // Check if the character is alphabetic
+            if (!str[i].match(/[a-zA-Z]/)) {
+                // If not alphabetic, simply append it to the cipher text
+                cipher_text += str[i];
+                continue;
+            }
+
+            // Convert characters to uppercase for consistent handling
+            let strCharCode = str[i].toUpperCase().charCodeAt(0) - 65;
+            let keyCharCode = key[i % key.length].toUpperCase().charCodeAt(0) - 65;
+
+            // Encrypt the character using Vigenere cipher formula
+            let encryptedCharCode = (strCharCode + keyCharCode) % 26;
+
+            // Convert back to uppercase alphabetic character
+            cipher_text += String.fromCharCode(encryptedCharCode + 65);
+        }
+        console.log("Encrypted Text: " + cipher_text);
+        return cipher_text;
+    }
+
+    function vigenere_decrypt(ciphertext, key) {
+        let orig_text = "";
+
+        for (let i = 0; i < ciphertext.length; i++) {
+            // Check if the character is alphabetic
+            if (!ciphertext[i].match(/[a-zA-Z]/)) {
+                // If not alphabetic, simply append it to the original text
+                orig_text += ciphertext[i];
+                continue;
+            }
+
+            // Convert characters to uppercase for consistent handling
+            let cipherCharCode = ciphertext[i].toUpperCase().charCodeAt(0) - 65;
+            let keyCharCode = key[i % key.length].toUpperCase().charCodeAt(0) - 65;
+
+            // Decrypt the character using Vigenere cipher formula
+            let decryptedCharCode = (cipherCharCode - keyCharCode + 26) % 26;
+
+            // Convert back to uppercase alphabetic character
+            orig_text += String.fromCharCode(decryptedCharCode + 65);
+        }
+        console.log("Decrypted Text: " + orig_text);
+        return orig_text;
+    }
+</script>
+</body>
+</html>
